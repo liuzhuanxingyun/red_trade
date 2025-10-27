@@ -4,25 +4,14 @@ import pandas as pd
 import time
 from datetime import datetime, timezone
 import logging
+from logging.handlers import RotatingFileHandler
 
 from dotenv import load_dotenv
-from utils import send_email_notification
+from utils import send_email_notification, setup_logging, time_checker
 from mark import ema_atr_filter
 
 # --- 日志配置 ---
-log_dir = 'rt/logs'
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-
-log_filename = os.path.join(log_dir, f"{datetime.now().strftime('%Y-%m-%d_%H-%M')}.log")
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(log_filename, encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
+setup_logging()
 # --- 日志配置结束 ---
 
 load_dotenv()
@@ -46,7 +35,7 @@ SL_ATR_MULTIPLIER = 3
 RR = 1
 ATR_THRESHOLD_PCT = 0
 
-FIXED_LEVERAGE = 10
+FIXED_LEVERAGE = 20
 RISK_USDT = 2.5
 
 exchange = ccxt.okx({
@@ -64,15 +53,6 @@ exchange = ccxt.okx({
         'https': 'http://127.0.0.1:7897',  
     }
 })
-
-# 添加一个时间段决定顺势逆势交易的函数
-# def time_checker(hour):
-#     if 4 <= hour <= 11:
-#         return 'counter_trend'
-#     elif 12 <= hour <= 23 or 0 <= hour <= 3:
-#         return 'trend_following'
-#     else:
-#         return 'trend_following'
 
 def strategy():
     try:
