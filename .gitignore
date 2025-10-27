@@ -1,1 +1,13 @@
+# 环境变量
 .env
+
+# 日志文件
+rt/logs/
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+
+# VS Code 编辑器配置
+.vscode/

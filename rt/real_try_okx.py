@@ -47,7 +47,7 @@ RR = 1
 ATR_THRESHOLD_PCT = 0
 
 FIXED_LEVERAGE = 10
-RISK_USDT = 1
+RISK_USDT = 2.5
 
 exchange = ccxt.okx({
     'apiKey': API_KEY,
@@ -154,7 +154,8 @@ def strategy():
                 return
 
             logging.info(f"\033[92m实际张数: {actual_size:.2f}\033[0m")
-            margin = (actual_size * 100) / FIXED_LEVERAGE
+            # 修正保证金计算公式
+            margin = (actual_size * 0.01 * entry_price) / FIXED_LEVERAGE
             logging.info(f"\033[92m保证金: {margin:.2f} USDT\033[0m")
 
             # 止盈止损
@@ -212,7 +213,8 @@ def strategy():
                 return
             
             logging.info(f"\033[92m实际张数: {actual_size:.2f}\033[0m")
-            margin = (actual_size * 100) / FIXED_LEVERAGE
+            # 修正保证金计算公式
+            margin = (actual_size * 0.01 * entry_price) / FIXED_LEVERAGE
             logging.info(f"\033[92m保证金: {margin:.2f} USDT\033[0m")
             
             # 止盈止损
