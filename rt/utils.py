@@ -2,11 +2,11 @@ import pandas as pd
 import os
 import smtplib
 import logging
+import time
 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from logging.handlers import RotatingFileHandler
-
 from datetime import datetime, timezone, timedelta
 
 # 设置日志配置，包括文件轮转和控制台输出
@@ -134,3 +134,39 @@ def time_checker(hour):
         return 'trend_following'
     else:
         return 'trend_following'
+
+# 等待到下一个指定时间间隔整点
+def wait_time(interval='15m'):
+    """
+    等待到下一个指定时间间隔整点。
+    
+    此函数根据输入的时间间隔字符串计算当前时间到下一个整点的等待秒数，并暂停执行。
+    
+    参数:
+    interval (str): 时间间隔字符串，如 '15m' (15分钟), '60s' (60秒), '1h' (1小时)，默认 '15m'
+    
+    返回:
+    无
+    """
+    now = datetime.now(timezone.utc)
+    
+    if interval.endswith('m'):
+        minutes = int(interval[:-1])
+        wait_seconds = (minutes - (now.minute % minutes)) * 60 - now.second
+        if wait_seconds <= 0:
+            wait_seconds += minutes * 60
+    elif interval.endswith('s'):
+        seconds = int(interval[:-1])
+        wait_seconds = seconds - (now.second % seconds)
+        if wait_seconds <= 0:
+            wait_seconds += seconds
+    elif interval.endswith('h'):
+        hours = int(interval[:-1])
+        wait_seconds = (hours - (now.hour % hours)) * 3600 - now.minute * 60 - now.second
+        if wait_seconds <= 0:
+            wait_seconds += hours * 3600
+    else:
+        raise ValueError("Invalid interval format. Use 'Xm', 'Xs', or 'Xh' where X is a number.")
+    
+    logging.info(f"等待 {wait_seconds} 秒到下一个 {interval} 整点")
+    time.sleep(wait_seconds)

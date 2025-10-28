@@ -7,7 +7,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 from dotenv import load_dotenv
-from utils import send_email_notification, setup_logging, time_checker
+from utils import send_email_notification, setup_logging, time_checker, wait_time
 from mark import ema_atr_filter
 
 # --- 日志配置 ---
@@ -38,12 +38,15 @@ ATR_THRESHOLD_PCT = 0
 FIXED_LEVERAGE = 20
 RISK_USDT = 2.5
 
+# 在全局变量部分添加止盈模式配置
+TP_MODE = 'limit'  # 可选值: 'limit' (限价止盈) 或 'trailing' (移动止盈止损)
+
 exchange = ccxt.okx({
     'apiKey': API_KEY,
     'secret': API_SECRET,
     'password': API_PASSPHRASE,
     'enableRateLimit': True,
-    'sandbox': False,
+    'sandbox': False,  # 使用模拟交易环境
     'options': {
         'defaultType': 'swap',
         'marginMode': 'isolated',
@@ -112,6 +115,7 @@ def strategy():
             
         entry_price = None
         sl_order_id = None
+        tp_order_id = None
         trailing_order_id = None
 
         if signal == 'long_entry':
@@ -153,26 +157,38 @@ def strategy():
             )
             sl_order_id = sl_order['id']
             logging.info(f"\033[92m止损订单（卖出）已设置，订单ID: {sl_order_id}\033[0m")
-            # 设置止盈订单
-            # tp_order = exchange.create_take_profit_order(SYMBOL, 'limit', 'sell', actual_size, price=tp_price, takeProfitPrice=(entry_price + tp_price) / 2, params={'reduceOnly': True})
-            # tp_order_id = tp_order['id']
-            # logging.info(f"止盈订单（卖出）已设置，订单ID: {tp_order_id}")
-            # 新增：设置移动止盈止损（trailing stop）
-            trailing_order = exchange.create_order(
-                SYMBOL,
-                'trailing_stop',
-                'sell',
-                actual_size,
-                params={
-                    'callbackSpread': str(tp_distance),  # 回调幅度的价距
-                    'activePx': str(tp_price),  # 激活价格为 tp_price
-                    'reduceOnly': True,
-                    'posSide': 'long'
-                }
-            )
-            trailing_order_id = trailing_order['id']
-            logging.info(f"\033[92m移动止盈止损订单（卖出）已设置，订单ID: {trailing_order_id}\033[0m")
-        
+
+            # 设置止盈订单（根据TP_MODE选择）
+            if TP_MODE == 'limit':
+                tp_order = exchange.create_take_profit_order(
+                    SYMBOL, 
+                    'limit', 
+                    'sell', 
+                    actual_size, 
+                    price=tp_price, 
+                    takeProfitPrice=(tp_price + entry_price) / 2, 
+                    params={'reduceOnly': True, 'posSide': 'long'}
+                )
+                tp_order_id = tp_order['id']
+                logging.info(f"\033[92m限价止盈订单（卖出）已设置，订单ID: {tp_order_id}\033[0m")
+            elif TP_MODE == 'trailing':
+                trailing_order = exchange.create_order(
+                    SYMBOL,
+                    'trailing_stop',
+                    'sell',
+                    actual_size,
+                    params={
+                        'callbackSpread': str(tp_distance),  # 回调幅度的价距
+                        'activePx': str(tp_price),  # 激活价格为 tp_price
+                        'reduceOnly': True,
+                        'posSide': 'long'
+                    }
+                )
+                trailing_order_id = trailing_order['id']
+                logging.info(f"\033[92m移动止盈止损订单（卖出）已设置，订单ID: {trailing_order_id}\033[0m")
+            else:
+                logging.warning("无效的TP_MODE，跳过止盈设置。")
+
         elif signal == 'short_entry':
 
             # 下单
@@ -212,26 +228,37 @@ def strategy():
             )
             sl_order_id = sl_order['id']
             logging.info(f"\033[92m止损订单（买入）已设置，订单ID: {sl_order_id}\033[0m")
-            # 设置止盈订单
-            # tp_order = exchange.create_take_profit_order(SYMBOL, 'limit', 'buy', actual_size, price=tp_price, takeProfitPrice=(entry_price + tp_price) / 2, params={'reduceOnly': True})
-            # tp_order_id = tp_order['id']
-            # logging.info(f"止盈订单（买入）已设置，订单ID: {tp_order_id}")
-            # 新增：设置移动止盈止损（trailing stop）
-            trailing_order = exchange.create_order(
-                SYMBOL,
-                'trailing_stop',
-                'buy',
-                actual_size,
-                params={
-                    'callbackSpread': str(tp_distance),  # 回调幅度的价距
-                    'activePx': str(tp_price),  # 激活价格为 tp_price
-                    'reduceOnly': True,
-                    'posSide': 'short'
-                }
-            )
-            trailing_order_id = trailing_order['id']
-            logging.info(f"\033[92m移动止盈止损订单（买入）已设置，订单ID: {trailing_order_id}\033[0m")
-  
+            # 设置止盈订单（根据TP_MODE选择）
+            if TP_MODE == 'limit':
+                tp_order = exchange.create_take_profit_order(
+                    SYMBOL, 
+                    'limit', 
+                    'buy', 
+                    actual_size, 
+                    price=tp_price, 
+                    takeProfitPrice=(tp_price + entry_price) / 2, 
+                    params={'reduceOnly': True, 'posSide': 'short'}
+                )
+                tp_order_id = tp_order['id']
+                logging.info(f"\033[92m限价止盈订单（买入）已设置，订单ID: {tp_order_id}\033[0m")
+            elif TP_MODE == 'trailing':
+                trailing_order = exchange.create_order(
+                    SYMBOL,
+                    'trailing_stop',
+                    'buy',
+                    actual_size,
+                    params={
+                        'callbackSpread': str(tp_distance),  # 回调幅度的价距
+                        'activePx': str(tp_price),  # 激活价格为 tp_price
+                        'reduceOnly': True,
+                        'posSide': 'short'
+                    }
+                )
+                trailing_order_id = trailing_order['id']
+                logging.info(f"\033[92m移动止盈止损订单（买入）已设置，订单ID: {trailing_order_id}\033[0m")
+            else:
+                logging.warning("无效的TP_MODE，跳过止盈设置。")
+
     except Exception as e:
         logging.error(f"策略执行失败: {e}")
 
@@ -254,10 +281,7 @@ def main():
             strategy()  # 调用策略
             logging.info("-" * 50)
             # 分钟级别以上可以用这个办法
-            now = datetime.now(timezone.utc)
-            wait_seconds = (15 - (now.minute % 15)) * 60 - now.second
-            logging.info(f"等待 {wait_seconds} 秒到下一个15分钟整点")
-            time.sleep(wait_seconds)
+            wait_time()
             
         except KeyboardInterrupt:
             logging.info("用户中断，停止运行。")
