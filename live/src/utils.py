@@ -17,7 +17,7 @@ def setup_logging():
     此函数创建日志目录（如果不存在），并配置日志记录器以将日志写入轮转文件和控制台。
     日志文件基于当前时间戳命名，并使用RotatingFileHandler来限制文件大小和保留备份。
     """
-    log_dir = 'rt/logs'
+    log_dir = os.path.join(os.path.dirname(__file__), '..', 'logs')
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
@@ -71,8 +71,7 @@ def send_email_notification(
 ):
     """
     发送邮件通知。
-    
-    此函数使用SMTP发送邮件，支持从环境变量读取配置信息。
+    使用SMTP发送邮件，支持从环境变量读取配置信息。
     
     参数:
     subject (str): 邮件主题
@@ -113,9 +112,9 @@ def send_email_notification(
         text = msg.as_string()
         server.sendmail(from_email, to_email, text)
         server.quit()
-        print("邮件发送成功。")
+        logging.info("邮件发送成功。")
     except Exception as e:
-        print(f"邮件发送失败：{e}")
+        logging.error(f"邮件发送失败：{e}")
 
 # 根据UTC小时决定交易策略类型
 def time_checker(hour):
@@ -140,13 +139,8 @@ def wait_time(interval='15m'):
     """
     等待到下一个指定时间间隔整点。
     
-    此函数根据输入的时间间隔字符串计算当前时间到下一个整点的等待秒数，并暂停执行。
-    
     参数:
     interval (str): 时间间隔字符串，如 '15m' (15分钟), '60s' (60秒), '1h' (1小时)，默认 '15m'
-    
-    返回:
-    无
     """
     now = datetime.now(timezone.utc)
     

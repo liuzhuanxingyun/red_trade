@@ -58,18 +58,10 @@ SMTP_PASSWORD=your_smtp_password
 激活虚拟环境后，运行主程序：
 
 ```bash
-python rt/real_try_okx.py
+python live/main.py
 ```
 
 程序将持续监控市场并根据策略执行交易。使用 Ctrl+C 停止程序。
-
-## 项目结构
-
-- `rt/mark.py`: 策略信号生成模块
-- `rt/utils.py`: 工具函数，包括数据获取和邮件通知
-- `rt/real_try_okx.py`: 主程序，包含交易逻辑
-- `rt/logs/`: 日志文件目录
-- `.env`: 环境变量配置文件（请勿提交）
 
 ## 策略说明
 

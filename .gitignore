@@ -2,7 +2,7 @@
 .env
 
 # 日志文件
-rt/logs/
+logs/
 
 # Python 缓存
 __pycache__/
@@ -10,3 +10,6 @@ __pycache__/
 
 # VS Code 编辑器配置
 .vscode/
+
+# 开发手册
+开发手册.md
