@@ -6,15 +6,8 @@ import os
 from datetime import datetime
 from backtesting import Backtest, Strategy
 from backtesting.lib import crossover, plot_heatmaps
-from utils import load_and_process_data, merge_csv_files, send_email_notification, download_binance_data, unzip_binance_data, create_3d_heatmap_cube, merge_csv_files_by_years_months
-
-def custom_maximize(stats):
-    # 检查交易数量和胜率有效性
-    if (stats['# Trades'] < 0 or
-        pd.isna(stats['Win Rate [%]'])):
-        return 0
-    # 直接返回胜率（百分比形式）
-    return stats['Win Rate [%]']
+from back_test.src.utils import load_and_process_data, merge_csv_files, send_email_notification, download_binance_data, unzip_binance_data, create_3d_heatmap_cube, merge_csv_files_by_years_months, custom_maximize
+from back_test.src.acquisition import acquire_data
 
 # 设置开关
 is_download_data = False  # 是否下载数据
@@ -26,10 +19,13 @@ is_send_single_email = False  # 单次回测邮件开关
 selected_years = [2025]  # 示例：选择2025年；可修改为所需年份列表，如 [2024, 2025]
 selected_months = [7, 8, 9]  # 示例：选择1月、2月、3月；可修改为所需月份列表，如 [1] 或 [1, 4, 7]
 
-if is_download_data:
-    download_binance_data(symbol='BTCUSDT', interval='1m', years=[2025], months=range(1, 10), save_dir='./data')
-    unzip_binance_data(symbol='BTCUSDT', interval='1m', save_dir='./data')  # 添加解压调用
-    merged_data = merge_csv_files(symbol='BTCUSDT', interval='1m')
+# 设置参数
+symbol = 'BTCUSDT'
+interval = '1m'
+is_download_data = False
+
+# 获取数据
+data = acquire_data(symbol=symbol, interval=interval, selected_years=selected_years, selected_months=selected_months, is_download_data=is_download_data)
 
 # 修改：根据 selected_years 和 selected_months 决定加载数据
 if selected_years and selected_months:
@@ -127,7 +123,7 @@ if is_batch_test:
     
     # 生成时间戳并创建新文件夹（移到此处，确保在 3D 热力图前定义）
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    batch_folder = f"result/batch_{timestamp}"
+    batch_folder = f"results/batch_{timestamp}"
     os.makedirs(batch_folder, exist_ok=True)
     
     # 新增：创建三维热力图魔方（基于 ema_period, atr_period, multiplier）
@@ -168,7 +164,7 @@ else:
     print(stats._trades)
     # 生成时间戳并创建新文件夹
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    single_folder = f"result/single_{timestamp}"
+    single_folder = f"results/single_{timestamp}"
     os.makedirs(single_folder, exist_ok=True)
     
     # 修改文件名以包含胜率和交易数量

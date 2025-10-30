@@ -4,12 +4,16 @@
 # 日志文件
 logs/
 
-# Python 缓存
+# Python 字节码和缓存
 __pycache__/
 *.pyc
 
 # VS Code 编辑器配置
 .vscode/
+
+# 数据和结果文件夹（根据项目需要忽略）
+data/
+results/
 
 # 开发手册
 开发手册.md

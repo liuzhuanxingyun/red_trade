@@ -276,4 +276,12 @@ def create_3d_heatmap_cube(aggregated, batch_folder, title='3D Heatmap Cube: EMA
         print(f"函数内部错误: {e}")
         return None
 
+def custom_maximize(stats):
+    # 检查交易数量和胜率有效性
+    if (stats['# Trades'] < 0 or
+        pd.isna(stats['Win Rate [%]'])):
+        return 0
+    # 直接返回胜率（百分比形式）
+    return stats['Win Rate [%]']
+
 
