@@ -7,9 +7,24 @@ logs/
 # Python 字节码和缓存
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
-# VS Code 编辑器配置
+# 虚拟环境
+venv/
+env/
+.venv/
+.env/
+
+# IDE 和编辑器配置
 .vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
 
 # 数据和结果文件夹（根据项目需要忽略）
 data/
@@ -17,3 +32,12 @@ results/
 
 # 开发手册
 开发手册.md
+
+# 构建和分发
+dist/
+build/
+*.egg-info/
+
+# 临时文件
+*.tmp
+*.log

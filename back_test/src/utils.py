@@ -5,6 +5,7 @@ import os
 import requests
 import zipfile
 import plotly.graph_objects as go
+import shutil  # 添加此导入
 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -17,9 +18,9 @@ load_dotenv()
 # 合并数据
 def merge_csv_files(symbol='BTCUSDT', interval='15m', directory=None, output_file=None):
     if directory is None:
-        directory = f'data/{symbol}-{interval}/'
+        directory = f'back_test/data/{symbol}-{interval}/'
     if output_file is None:
-        output_file = f'data/merged_{symbol}-{interval}.csv'
+        output_file = f'back_test/data/merged_{symbol}-{interval}.csv'
     try:
         csv_files = glob.glob(f'{directory}*.csv')
         if not csv_files:
@@ -41,7 +42,7 @@ def merge_csv_files(symbol='BTCUSDT', interval='15m', directory=None, output_fil
         return None
 
 # 按年份和月份合并数据
-def merge_csv_files_by_years_months(symbol, interval, years, months, output_file=None):
+def merge_csv_files_by_years_months(symbol, interval, years, months, input_dir=None, output_file=None):
     """
     合并指定年月的数据文件为一个新的CSV文件。
     
@@ -50,20 +51,24 @@ def merge_csv_files_by_years_months(symbol, interval, years, months, output_file
     - interval: 时间间隔，如 '1m'
     - years: 年份列表，如 [2024, 2025]
     - months: 月份列表，如 [1, 2, 3]
+    - input_dir: 输入目录路径，用于获取子文件，如果为None，则使用默认路径 'data/{symbol}-{interval}'
     - output_file: 输出文件路径，如果为None，则使用默认路径 'data/merged_{symbol}-{interval}.csv'
     
     返回:
     - merged_data: 合并后的DataFrame
     """
     
+    if input_dir is None:
+        input_dir = f'back_test/data/{symbol}-{interval}'
+    
     if output_file is None:
-        output_file = f'data/merged_{symbol}-{interval}.csv'
+        output_file = f'back_test/data/merged_{symbol}-{interval}.csv'
     
     data_frames = []
     
     for year in years:
         for month in months:
-            file_path = f'data/{symbol}-{interval}/{symbol}-{interval}-{year}-{month:02d}.csv'
+            file_path = f'{input_dir}/{symbol}-{interval}-{year}-{month:02d}.csv'
             if os.path.exists(file_path):
                 df = pd.read_csv(file_path)
                 data_frames.append(df)
@@ -83,32 +88,7 @@ def merge_csv_files_by_years_months(symbol, interval, years, months, output_file
         return pd.DataFrame()
 
 # 加载和处理数据
-def load_and_process_data(file_path='data/merged_BTCUSDT-15m.csv'):
-
-    try:
-        data = pd.read_csv(file_path)
-
-        sample_value = str(data['open_time'].iloc[0]) if not data.empty else ''
-        if sample_value.isdigit() and len(sample_value) == 13:
-            data['open_time'] = pd.to_datetime(data['open_time'], unit='ms')
-        else:
-            data['open_time'] = pd.to_datetime(data['open_time'])
-                
-        data.set_index('open_time', inplace=True)
-        data = data[['open', 'high', 'low', 'close', 'volume']].rename(
-            columns={
-                'open': 'Open',
-                'high': 'High',
-                'low': 'Low',
-                'close': 'Close',
-                'volume': 'Volume'
-            }
-        )
-        print(f"数据加载和处理完成，共 {len(data)} 行。")
-        return data
-    except Exception as e:
-        print(f"数据加载和处理出错：{e}")
-        return None
+def load_and_process_data(file_path='back_test/data/merged_BTCUSDT-15m.csv'):
 
     try:
         data = pd.read_csv(file_path)
@@ -136,7 +116,7 @@ def load_and_process_data(file_path='data/merged_BTCUSDT-15m.csv'):
         return None
 
 # 下载Binance数据
-def download_binance_data(symbol='ETCUSDT', interval='15m', years=[2020], months=range(1, 13), save_dir='./data'):
+def download_binance_data(symbol='ETCUSDT', interval='15m', years=[2020], months=range(1, 13), save_dir='back_test/data'):
 
     save_dir = f"{save_dir}/{symbol}_{interval}"
     os.makedirs(save_dir, exist_ok=True)
@@ -171,7 +151,7 @@ def download_binance_data(symbol='ETCUSDT', interval='15m', years=[2020], months
                 print(f"下载失败 {file_name}: {e}")
 
 # 解压Binance数据
-def unzip_binance_data(symbol='ETCUSDT', interval='15m', save_dir='./data'):
+def unzip_binance_data(symbol='ETCUSDT', interval='15m', save_dir='back_test/data'):
 
     zip_dir = f"{save_dir}/{symbol}_{interval}"
     csv_dir = f"{save_dir}/{symbol}-{interval}"
@@ -283,5 +263,20 @@ def custom_maximize(stats):
         return 0
     # 直接返回胜率（百分比形式）
     return stats['Win Rate [%]']
+
+# 删除压缩包文件夹
+def delete_zip_folder(symbol, interval, save_dir):
+    """
+    删除指定符号和间隔的压缩包文件夹。
+    
+    参数:
+    - symbol: 交易对符号，如 'BTCUSDT'
+    - interval: 时间间隔，如 '1m'
+    - save_dir: 保存目录路径，如 'back_test/data'
+    """
+    zip_folder = f'{save_dir}/{symbol}_{interval}'
+    if os.path.exists(zip_folder):
+        print(f"删除压缩包文件夹: {zip_folder}")
+        shutil.rmtree(zip_folder)
 
 

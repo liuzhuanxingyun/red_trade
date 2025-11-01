@@ -30,6 +30,13 @@ pip install TA-Lib
 
 在其他系统上，请参考 [TA-Lib 官方文档](https://github.com/mrjbq7/ta-lib) 进行安装。
 
+**注意：** `sambo` 库在安装时可能因缺少依赖（如 `joblib`, `scikit-learn`）而失败。如果 `pip install -r requirements.txt` 出现错误，请尝试手动安装这些依赖：
+
+```bash
+pip install joblib
+pip install scikit-learn
+```
+
 ### 3. 配置环境变量
 
 项目使用 `.env` 文件存储敏感信息（如API密钥、邮箱配置）。请创建并编辑 `.env` 文件：

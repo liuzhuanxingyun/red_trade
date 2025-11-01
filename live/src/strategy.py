@@ -43,7 +43,7 @@ def live_strategy(exchange, SYMBOL, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRE
                     signal = 'short_entry'  # 顺势：下突破做空
         
         if not signal:
-            logging.info("无交易信号。")
+            logging.info(f"\033[94m币种 {SYMBOL} 无交易信号。\033[0m")
             return
         else:
             # 发送邮件通知
@@ -172,7 +172,7 @@ def test_strategy(exchange, SYMBOL, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRE
                     signal = 'short_entry'  # 顺势：下突破做空
         
         if not signal:
-            logging.info("无交易信号。")
+            logging.info(f"\033[94m币种 {SYMBOL} 无交易信号。\033[0m")
             return
         else:
             # 发送邮件通知
