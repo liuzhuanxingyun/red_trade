@@ -4,7 +4,7 @@ from datetime import datetime
 from backtesting.lib import plot_heatmaps
 from .utils import create_3d_heatmap_cube
 
-def process_batch_backtest(stats, heatmap, symbol, interval, bt):
+def process_batch_backtest(stats, heatmap, symbol, interval, bt, results_dir='back_test/results'):
     """
     处理批量回测结果：保存文件、生成图表。
     
@@ -14,6 +14,7 @@ def process_batch_backtest(stats, heatmap, symbol, interval, bt):
     - symbol: 交易对符号
     - interval: 时间间隔
     - bt: Backtest 对象 (此处不再需要)
+    - results_dir: 结果保存目录
     """
     # 将 heatmap 转换为 DataFrame
     heatmap_df = heatmap.reset_index()
@@ -41,7 +42,7 @@ def process_batch_backtest(stats, heatmap, symbol, interval, bt):
     
     # 生成时间戳并创建新文件夹
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    batch_folder = f"back_test/results/batch_{timestamp}"
+    batch_folder = f"{results_dir}/batch_{timestamp}"
     os.makedirs(batch_folder, exist_ok=True)
     
     # 调用函数创建 3D 热力图
@@ -58,7 +59,7 @@ def process_batch_backtest(stats, heatmap, symbol, interval, bt):
     plot_heatmaps(heatmap, filename=plot_filename, open_browser=True)
     heatmap_df.to_csv(heatmap_filename, index=False)  # 使用 heatmap_df 保存，包含 # Trades 列
 
-def process_single_backtest(stats, symbol, interval, bt):
+def process_single_backtest(stats, symbol, interval, bt, results_dir='back_test/results'):
     """
     处理单次回测结果：保存文件、生成图表。
     
@@ -67,10 +68,11 @@ def process_single_backtest(stats, symbol, interval, bt):
     - symbol: 交易对符号
     - interval: 时间间隔
     - bt: Backtest 对象，用于生成图表
+    - results_dir: 结果保存目录
     """
     # 生成时间戳并创建新文件夹
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    single_folder = f"back_test/results/single_{timestamp}"
+    single_folder = f"{results_dir}/single_{timestamp}"
     os.makedirs(single_folder, exist_ok=True)
     
     # 修改文件名以包含胜率和交易数量

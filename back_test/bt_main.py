@@ -9,8 +9,13 @@ from src.utils import send_email_notification, custom_maximize  # 添加导入�
 symbol = 'BTCUSDT'
 interval = '15m'
 
+# --- 新增：统一路径管理 ---
+DATA_DIR = 'back_test/data'
+RESULTS_DIR = 'back_test/results'
+# --- 结束新增 ---
+
 # 设置开关
-is_batch_test = True  # 是否进行批量回测
+is_batch_test = False  # 是否进行批量回测
 
 # 新增：选择具体年份和月份进行合并回测（空列表则使用默认单个文件）
 selected_years = [2025]  # 示例：选择2025年；可修改为所需年份列表，如 [2024, 2025]
@@ -42,7 +47,7 @@ optimize_params = {
     # list(np.arange(0.00001, 0.00101, 0.0001))
     'rr_range': [2],
     
-    'max_tries': 6,
+    'max_tries': 600,
     'method': 'sambo',
     'return_heatmap': True,
     'maximize': custom_maximize
@@ -52,7 +57,7 @@ is_send_batch_email = False  # 批量回测邮件开关
 is_send_single_email = False  # 单次回测邮件开关
 
 # 获取数据
-data = acquire_data(symbol=symbol, interval=interval, selected_years=selected_years, selected_months=selected_months)
+data = acquire_data(symbol=symbol, interval=interval, selected_years=selected_years, selected_months=selected_months, save_dir=DATA_DIR)
 
 # 调用回测函数
 if is_batch_test:
@@ -60,7 +65,8 @@ if is_batch_test:
         is_batch_test, data, symbol, interval,
         backtest_params, strategy_params, optimize_params
     )
-    process_batch_backtest(stats, heatmap, symbol, interval, bt)  # 传递 bt (即使新逻辑可能不用)
+    # 在调用 process_batch_backtest 时传入 RESULTS_DIR
+    process_batch_backtest(stats, heatmap, symbol, interval, bt, results_dir=RESULTS_DIR)  # 传递 bt (即使新逻辑可能不用)
     
     if is_send_batch_email:
         # 发送批量回测邮件提醒
@@ -74,7 +80,7 @@ else:
         is_batch_test, data, symbol, interval,
         backtest_params, strategy_params
     )
-    process_single_backtest(stats, symbol, interval, bt)
+    process_single_backtest(stats, symbol, interval, bt, results_dir=RESULTS_DIR)  # 修复：传递 results_dir
     
     if is_send_single_email:
         # 发送单次回测邮件提醒
