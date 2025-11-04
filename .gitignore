@@ -30,9 +30,6 @@ Thumbs.db
 data/
 results/
 
-# 开发手册
-开发手册.md
-
 # 构建和分发
 dist/
 build/
