@@ -22,22 +22,25 @@ SMTP_USER = os.getenv('SMTP_USER')
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 
 # 将单个SYMBOL改为列表
-SYMBOLS = ['BTC/USDT:USDT', 'SOL/USDT:USDT']  # 添加更多品种
+SYMBOLS = ['BTC/USDT:USDT']  # 添加更多品种
 
 # --- 参数配置 ---
 TIMEFRAME = '15m'
-CONTRACT_SIZES = [100, 1]  # 与SYMBOLS一一对应
-LEVERAGES = [10, 5]  # 与SYMBOLS一一对应，每个品种的杠杆
+CONTRACT_SIZES = [100]  # 与SYMBOLS一一对应
+LEVERAGES = [10]  # 与SYMBOLS一一对应，每个品种的杠杆
 
 # 在全局变量部分添加止盈模式配置
 TP_MODE = 'limit'  # 可选值: 'limit' (限价止盈) 或 'trailing' (移动止盈止损)
 
-EMA_PERIOD = 4
-ATR_PERIOD = 18
-MULTIPLIER = 2
-SL_ATR_MULTIPLIER = 3
+EMA_PERIOD = 25
+ATR_PERIOD = 24
+MULTIPLIER = 3
+SL_ATR_MULTIPLIER = 2
 ATR_THRESHOLD_PCT = 0
 RR = 2
+
+# 在全局变量部分添加禁止交易时段
+FORBIDDEN_HOURS = [[21, 1]]  # UTC时间，禁止21点到1点交易
 
 # 风险管理
 RISK_USDT = 2.5
@@ -93,9 +96,9 @@ def main():
         try:
             for symbol, contract_size, leverage in zip(SYMBOLS, CONTRACT_SIZES, LEVERAGES):  # 对每个品种运行策略，使用对应的CONTRACT_SIZE和LEVERAGE
                 if SANDBOX:
-                    test_strategy(exchange, symbol, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, SL_ATR_MULTIPLIER, RR, RISK_USDT, leverage, TP_MODE, contract_size)
+                    test_strategy(exchange, symbol, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, SL_ATR_MULTIPLIER, RR, RISK_USDT, leverage, TP_MODE, contract_size, FORBIDDEN_HOURS)
                 else:
-                    live_strategy(exchange, symbol, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, SL_ATR_MULTIPLIER, RR, RISK_USDT, leverage, TP_MODE, contract_size)
+                    live_strategy(exchange, symbol, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, SL_ATR_MULTIPLIER, RR, RISK_USDT, leverage, TP_MODE, contract_size, FORBIDDEN_HOURS)
                 logging.info("-" * 50)
             # 测试用
             # time.sleep(5)

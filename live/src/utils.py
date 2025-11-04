@@ -164,3 +164,26 @@ def wait_time(interval='15m'):
     
     logging.info(f"等待 {wait_seconds} 秒到下一个 {interval} 整点")
     time.sleep(wait_seconds)
+
+# 检查当前时段是否允许交易
+def is_trading_allowed(current_hour, forbidden_hours):
+    """
+    检查当前时段是否允许交易。
+    
+    参数:
+    current_hour (int): 当前UTC小时 (0-23)
+    forbidden_hours (list): 禁止交易时段列表，如 [[23,2], [12,17]]
+    
+    返回:
+    bool: True 如果允许交易，False 如果禁止
+    """
+    for start, end in forbidden_hours:
+        if start <= end:
+            # 非跨天时段，如12到17
+            if start <= current_hour <= end:
+                return False
+        else:
+            # 跨天时段，如23到2
+            if current_hour >= start or current_hour <= end:
+                return False
+    return True

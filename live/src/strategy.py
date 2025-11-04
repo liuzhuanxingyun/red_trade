@@ -10,7 +10,7 @@ from .signals import ema_atr_filter
 from .exit_mechanism import set_stop_loss_and_take_profit
 
 
-def live_strategy(exchange, SYMBOL, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, SL_ATR_MULTIPLIER, RR, RISK_USDT, FIXED_LEVERAGE, TP_MODE, CONTRACT_SIZE):
+def live_strategy(exchange, SYMBOL, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, SL_ATR_MULTIPLIER, RR, RISK_USDT, FIXED_LEVERAGE, TP_MODE, CONTRACT_SIZE, forbidden_hours=None):
     """
     实盘交易策略：根据EMA和ATR过滤器生成信号，执行交易并设置止盈止损。
     """
@@ -19,7 +19,7 @@ def live_strategy(exchange, SYMBOL, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRE
         hour = now.hour
 
         # 获取信号和ATR值
-        mark, atr_value = ema_atr_filter(exchange, SYMBOL, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT)
+        mark, atr_value = ema_atr_filter(exchange, SYMBOL, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, forbidden_hours)
 
         # strategy_type = time_checker(hour)  # 移到此处，确保始终定义
         strategy_type = 'trend_following'  
@@ -139,7 +139,7 @@ def live_strategy(exchange, SYMBOL, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRE
         logging.error(f"策略执行失败: {e}")
 
 
-def test_strategy(exchange, SYMBOL, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, SL_ATR_MULTIPLIER, RR, RISK_USDT, FIXED_LEVERAGE, TP_MODE, CONTRACT_SIZE):
+def test_strategy(exchange, SYMBOL, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, SL_ATR_MULTIPLIER, RR, RISK_USDT, FIXED_LEVERAGE, TP_MODE, CONTRACT_SIZE, forbidden_hours=None):
     """
     模拟交易策略：与实盘类似，但不指定posSide。
     """
@@ -148,7 +148,7 @@ def test_strategy(exchange, SYMBOL, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRE
         hour = now.hour
 
         # 获取信号和ATR值
-        mark, atr_value = ema_atr_filter(exchange, SYMBOL, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT)
+        mark, atr_value = ema_atr_filter(exchange, SYMBOL, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, forbidden_hours)
 
         # strategy_type = time_checker(hour)  # 移到此处，确保始终定义
         strategy_type = 'trend_following'  

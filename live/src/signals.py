@@ -1,9 +1,10 @@
 import talib
 import logging
+from datetime import datetime, timezone
 
-from .utils import get_ohlcv_data  # 相对导入
+from .utils import get_ohlcv_data, is_trading_allowed  # 添加导入
 
-def ema_atr_filter(exchange, symbol, ema_period, atr_period, multiplier, atr_threshold_pct):
+def ema_atr_filter(exchange, symbol, ema_period, atr_period, multiplier, atr_threshold_pct, forbidden_hours=None):
     """
     生成EMA-ATR过滤信号。
     
@@ -16,11 +17,21 @@ def ema_atr_filter(exchange, symbol, ema_period, atr_period, multiplier, atr_thr
     atr_period: ATR周期
     multiplier: 通道倍数
     atr_threshold_pct: ATR阈值百分比
+    forbidden_hours: 禁止交易时段列表，如 [[23,2], [12,17]]，默认None（允许所有时段）
     
     返回:
     tuple: (信号类型, ATR值) 或 (None, ATR值)
     """
+    if forbidden_hours is None:
+        forbidden_hours = []  # 默认允许所有时段
+    
     try:
+        # 检查时段过滤器
+        current_hour = datetime.now(timezone.utc).hour
+        if not is_trading_allowed(current_hour, forbidden_hours):
+            logging.info("当前时段禁止交易。")
+            return None, None
+        
         # 获取K线数据
         df = get_ohlcv_data(exchange, symbol, timeframe='15m')
         
@@ -51,6 +62,21 @@ def ema_atr_filter(exchange, symbol, ema_period, atr_period, multiplier, atr_thr
         atr_pct = atr_value / last_close
         if atr_pct < atr_threshold_pct:
             logging.info(f"波动率过低 ({atr_pct:.4f} < {atr_threshold_pct})，跳过交易。")
+            return None, atr_value
+        
+        # 新增：成交量过滤器
+        # 检查上一根和上上根K线颜色一致（都是上涨或都是下跌）
+        last_color = df['close'].iloc[-2] > df['open'].iloc[-2]  # True: 绿（上涨），False: 红（下跌）
+        prev_color = df['close'].iloc[-3] > df['open'].iloc[-3]
+        if last_color != prev_color:
+            logging.info("上一根和上上根K线颜色不一致，跳过交易。")
+            return None, atr_value
+        
+        # 检查上一根K线成交量大于上上根K线成交量
+        last_volume = df['volume'].iloc[-2]
+        prev_volume = df['volume'].iloc[-3]
+        if last_volume <= prev_volume:
+            logging.info(f"上一根K线成交量 ({last_volume}) 不大于上上根K线成交量 ({prev_volume})，跳过交易。")
             return None, atr_value
         
         # 上轨突破条件（上上根在通道内，上一根突破上轨）
