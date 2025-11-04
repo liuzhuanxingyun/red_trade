@@ -15,7 +15,7 @@ from dotenv import load_dotenv  # 添加此导入
 # 在文件顶部加载 .env 文件
 load_dotenv()
 
-# 合并数据
+# 合并指定目录中的所有 CSV 文件为一个文件
 def merge_csv_files(symbol='BTCUSDT', interval='15m', directory=None, output_file=None):
     if directory is None:
         directory = f'back_test/data/{symbol}-{interval}/'
@@ -41,7 +41,7 @@ def merge_csv_files(symbol='BTCUSDT', interval='15m', directory=None, output_fil
         print(f"合并出错：{e}")
         return None
 
-# 按年份和月份合并数据
+# 按指定年份和月份合并数据文件为一个新的 CSV 文件
 def merge_csv_files_by_years_months(symbol, interval, years, months, input_dir=None, output_file=None):
     """
     合并指定年月的数据文件为一个新的CSV文件。
@@ -87,7 +87,7 @@ def merge_csv_files_by_years_months(symbol, interval, years, months, input_dir=N
         print("没有找到任何文件进行合并")
         return pd.DataFrame()
 
-# 加载和处理数据
+# 加载和处理 CSV 数据文件，转换为 backtesting 库所需的格式
 def load_and_process_data(file_path='back_test/data/merged_BTCUSDT-15m.csv'):
 
     try:
@@ -115,7 +115,7 @@ def load_and_process_data(file_path='back_test/data/merged_BTCUSDT-15m.csv'):
         print(f"数据加载和处理出错：{e}")
         return None
 
-# 下载Binance数据
+# 从 Binance 下载指定交易对和时间间隔的历史数据压缩包
 def download_binance_data(symbol='ETCUSDT', interval='15m', years=[2020], months=range(1, 13), save_dir='back_test/data'):
 
     save_dir = f"{save_dir}/{symbol}_{interval}"
@@ -150,7 +150,7 @@ def download_binance_data(symbol='ETCUSDT', interval='15m', years=[2020], months
             except Exception as e:
                 print(f"下载失败 {file_name}: {e}")
 
-# 解压Binance数据
+# 解压下载的 Binance 数据压缩包为 CSV 文件
 def unzip_binance_data(symbol='ETCUSDT', interval='15m', save_dir='back_test/data'):
 
     zip_dir = f"{save_dir}/{symbol}_{interval}"
@@ -170,7 +170,7 @@ def unzip_binance_data(symbol='ETCUSDT', interval='15m', save_dir='back_test/dat
         except Exception as e:
             print(f"解压失败 {zip_path}: {e}")
 
-# 发送邮件提醒
+# 发送邮件通知
 def send_email_notification(
     subject,
     body,
@@ -211,6 +211,7 @@ def send_email_notification(
     except Exception as e:
         print(f"邮件发送失败：{e}")
 
+# 创建并保存 3D 热力图魔方，用于可视化参数优化结果
 def create_3d_heatmap_cube(aggregated, batch_folder, title='3D Heatmap Cube: EMA Period vs ATR Period vs Multiplier'):
     """
     创建并保存 3D 热力图魔方。
@@ -256,6 +257,7 @@ def create_3d_heatmap_cube(aggregated, batch_folder, title='3D Heatmap Cube: EMA
         print(f"函数内部错误: {e}")
         return None
 
+# 自定义最大化函数，用于 backtesting 优化，基于胜率
 def custom_maximize(stats):
     # 检查交易数量和胜率有效性
     if (stats['# Trades'] < 0 or
@@ -264,7 +266,7 @@ def custom_maximize(stats):
     # 直接返回胜率（百分比形式）
     return stats['Win Rate [%]']
 
-# 删除压缩包文件夹
+# 删除指定符号和间隔的压缩包文件夹
 def delete_zip_folder(symbol, interval, save_dir):
     """
     删除指定符号和间隔的压缩包文件夹。
