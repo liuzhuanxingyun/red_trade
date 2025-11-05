@@ -39,24 +39,36 @@ def setup_logging():
     )
 
 # 获取OHLCV数据并转换为Pandas DataFrame
-def get_ohlcv_data(exchange, symbol='BTC/USDT:USDT', timeframe='15m', limit=100):
+def get_ohlcv_data(exchange, symbol='BTC/USDT:USDT', timeframe='15m', limit=100, retries=3, delay=5):
     """
-    获取OHLCV数据并转换为Pandas DataFrame。
+    获取OHLCV数据并转换为Pandas DataFrame，增加了重试机制。
     
     参数:
     exchange: ccxt交易所对象
     symbol (str): 交易对符号，默认 'BTC/USDT:USDT'
     timeframe (str): 时间框架，默认 '15m'
     limit (int): 获取的K线数量，默认 100
+    retries (int): 失败后重试的次数
+    delay (int): 每次重试之间的延迟秒数
     
     返回:
-    pd.DataFrame: 包含OHLCV数据的DataFrame，索引为时间戳
+    pd.DataFrame: 包含OHLCV数据的DataFrame，索引为时间戳，失败则抛出异常
     """
-    bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
-    df = pd.DataFrame(bars, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-    df.set_index('timestamp', inplace=True)
-    return df
+    for i in range(retries):
+        try:
+            bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
+            df = pd.DataFrame(bars, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            df.set_index('timestamp', inplace=True)
+            return df
+        except Exception as e:
+            logging.warning(f"获取OHLCV数据失败 (第 {i+1}/{retries} 次尝试): {e}")
+            if i < retries - 1:
+                logging.info(f"将在 {delay} 秒后重试...")
+                time.sleep(delay)
+            else:
+                logging.error("获取OHLCV数据失败，已达到最大重试次数。")
+                raise  # 重试次数用尽后，重新抛出异常
 
 # 发送邮件通知
 def send_email_notification(
