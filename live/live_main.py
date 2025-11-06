@@ -40,7 +40,7 @@ ATR_THRESHOLD_PCT = 0
 RR = 2
 
 # 在全局变量部分添加禁止交易时段
-FORBIDDEN_HOURS = [[21, 1]]  # UTC时间，禁止21点到1点交易
+FORBIDDEN_HOURS = [[23, 1], [8, 10], [3, 4]]  # UTC时间，禁止23点到1点、8点到10点、3点到4点交易
 
 # 风险管理
 RISK_USDT = 2.5

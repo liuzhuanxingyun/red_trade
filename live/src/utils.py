@@ -39,7 +39,7 @@ def setup_logging():
     )
 
 # 获取OHLCV数据并转换为Pandas DataFrame
-def get_ohlcv_data(exchange, symbol='BTC/USDT:USDT', timeframe='15m', limit=100, retries=3, delay=5):
+def get_ohlcv_data(exchange, symbol='BTC/USDT:USDT', timeframe='15m', limit=100, retries=10, delay=10):
     """
     获取OHLCV数据并转换为Pandas DataFrame，增加了重试机制。
     
