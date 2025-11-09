@@ -1,0 +1,144 @@
+//@version=6
+
+strategy("EMA-ATR-波动过滤", 
+     shorttitle="EMA-ATR-波动过滤", 
+     overlay=true, pyramiding=0, fill_orders_on_standard_ohlc = true)
+
+// === 1. 输入参数 ===
+
+// -- 交易时段 --
+trend_session = input.session("0800-2300", "趋势交易")
+timezone_str = input.string(defval="Etc/UTC", title="时区", options=["Etc/UTC", "Asia/Shanghai", "America/New_York", "America/Los_Angeles"],tooltip="请选择市场对应的时区（UTC / 北京 / 美国东部 / 美国西部）")
+
+// -- 策略核心参数 --
+lengthEMA = input.int(24, "EMA 长度", minval=1)
+lengthATR = input.int(12, "ATR 长度", minval=1)
+multiplierATR = input.float(3, "ATR 乘数", minval=0.1, step=0.1)
+sl_multiplierATR = input.float(2, "止损 ATR 乘数", minval=0.1, step=0.1)
+atr_threshold_pct = input.float(0, "最小 ATR 波动率百分比阈值", minval=0, step=0.0001,
+     tooltip="当 ATR/价格 < 阈值百分比 时，不进行交易。设为 0 表示禁用过滤。")
+rr_ratio = input.float(1.0, "风险回报比 (RR)", minval=0.1, step=0.5)
+
+
+// === 1a. 时间判断 ===
+// 如果当前K线时间在趋势交易时段内，is_trend_session 为 true
+is_trend_session = not na(time(timeframe.period, trend_session, timezone_str))
+
+// === 1b. 新增：UTC 21:00 - 01:00 不交易时段 ===
+// 【修正】: 定义函数来检查，并在函数 *内部* 指定时区
+in_no_trade_session() =>
+    // 检查 21:00 - 01:00 (UTC)
+    session1 = time(timeframe.period, "0000-0200", "Etc/UTC")
+    // 检查 11:30 - 13:00 (UTC)
+    session2 = time(timeframe.period, "0900-1100", "Etc/UTC")
+    session3 = time(timeframe.period, "0400-0500", "Etc/UTC")
+
+    
+    // 如果当前K线在 session1 *或* session2 任意一个时段内 (not na)，
+    // 函数就返回 true (表示“在不交易时段内”)
+    not na(session1) or not na(session2) or not na(session3)
+
+// 【修正】：*直接调用* 函数来获取布尔值
+// is_no_trade_time 会是 true (如果不交易) 或 false (如果可以交易)
+is_no_trade_time = in_no_trade_session()
+
+// 真正允许交易的时间 = *不在* 不交易时段内
+allow_trade_time = not is_no_trade_time
+
+// === 2. 通道和 ATR 计算 ===
+
+emaValue = ta.ema(close, lengthEMA)
+atrValue = ta.atr(lengthATR)
+
+upperChannel = emaValue + (multiplierATR * atrValue)
+lowerChannel = emaValue - (multiplierATR * atrValue)
+
+// === 3. ATR 波动率过滤器（基于百分比） ===
+
+atr_pct = atrValue / close
+// 当 atr_pct 大于等于阈值时，volatility_filter 为 true，允许交易
+volatility_filter = atr_pct >= atr_threshold_pct or atr_threshold_pct == 0
+
+// === 3a. 新增：成交量与K线颜色过滤 ===
+// 检查 K 线颜色
+// 【修改】: 检查 bar[0] (当前K棒) 和 bar[1] (上一根K棒)
+bar0_green = close > open      // close[0] > open[0]
+bar1_green = close[1] > open[1]
+bar0_red = close < open      // close[0] < open[0]
+bar1_red = close[1] < open[1]
+
+// 条件 1: 当前K棒 (bar[0]) 和上一根 (bar[1]) K线颜色必须一致
+// 【修改】
+same_color = (bar0_green and bar1_green) or (bar0_red and bar1_red)
+
+// 条件 2: 当前K棒 (bar[0]) 的成交量必须大于上一根K线 (bar[1]) 的成交量
+// 【修改】
+volume_increase = volume > volume[1] // volume[0] > volume[1]
+
+// 组合为最终的过滤条件
+volume_candle_filter = same_color and volume_increase
+
+// === 4. 信号条件 ===
+
+// 顺势信号 (趋势时段使用)
+trend_long_signal  = ta.crossover(close, upperChannel) and barstate.isconfirmed
+trend_short_signal = ta.crossunder(close, lowerChannel) and barstate.isconfirmed
+
+// 逆转信号 (非趋势时段使用)
+reversal_long_signal  = ta.crossunder(close, lowerChannel) and barstate.isconfirmed // 在下通道处做多
+reversal_short_signal = ta.crossover(close, upperChannel) and barstate.isconfirmed // 在上通道处做空
+
+// === 5. 止损与止盈 ===
+stopLossDistance = sl_multiplierATR * atrValue
+takeProfitDistance = stopLossDistance * rr_ratio
+
+// === 6. 入场逻辑（分时段） ===
+
+// --- 组合最终的交易决策 ---
+// 做多条件: (是趋势时段 且 触发顺势做多信号) 或者 (非趋势时段 且 触发逆转做多信号)
+go_long = (is_trend_session and trend_long_signal) or (not is_trend_session and reversal_long_signal)
+
+// 做空条件: (是趋势时段 且 触发顺势做空信号) 或者 (非趋势时段 且 触发逆转做空信号)
+go_short = (is_trend_session and trend_short_signal) or (not is_trend_session and reversal_short_signal)
+
+// --- 执行交易 ---
+// 做多
+// **修改点**：在 if 条件中增加了 'allow_trade_time' 和 'volume_candle_filter'
+if go_long and strategy.position_size == 0 and volatility_filter and allow_trade_time and volume_candle_filter
+    longStopPrice = close - stopLossDistance
+    longTakeProfitPrice = close + takeProfitDistance
+
+    strategy.entry("BUY", strategy.long)
+    strategy.exit("LONG Exit", "BUY", stop=longStopPrice, limit=longTakeProfitPrice)
+    // 止损止盈线只在开仓时画出
+    line.new(bar_index, longStopPrice, bar_index + 5, longStopPrice, color=color.red, style=line.style_dashed)
+    line.new(bar_index, longTakeProfitPrice, bar_index + 5, longTakeProfitPrice, color=color.green, style=line.style_dashed)
+
+// 做空
+// **修改点**：在 if 条件中增加了 'allow_trade_time' 和 'volume_candle_filter'
+if go_short and strategy.position_size == 0 and volatility_filter and allow_trade_time and volume_candle_filter
+    shortStopPrice = close + stopLossDistance
+    shortTakeProfitPrice = close - takeProfitDistance
+
+    strategy.entry("SELL", strategy.short)
+    strategy.exit("SHORT Exit", "SELL", stop=shortStopPrice, limit=shortTakeProfitPrice)
+    // 止损止盈线只在开仓时画出
+    line.new(bar_index, shortStopPrice, bar_index + 5, shortStopPrice, color=color.red, style=line.style_dashed)
+    line.new(bar_index, shortTakeProfitPrice, bar_index + 5, shortTakeProfitPrice, color=color.green, style=line.style_dashed)
+
+
+
+// === 7. 绘图 ===
+
+plot(emaValue, color=color.blue, title="EMA", linewidth=2)
+p_upper = plot(upperChannel, color=color.red, title="上通道", linewidth=1)
+p_lower = plot(lowerChannel, color=color.green, title="下通道", linewidth=1)
+fill(p_upper, p_lower, color=color.new(#0080FF, 90))
+
+// --- 可视化交易时段与波动率过滤 ---
+// 如果波动率过滤不通过 (禁止交易)，背景为红色
+// 如果通过，则判断是否为美股时段，是则为蓝色，否则无色
+// 3. 如果两者都通过，再判断是否为趋势时段 (is_trend_session)，是则为蓝色，否则无色
+bgColor = (not volatility_filter or not allow_trade_time) ? color.new(color.red, 90) : is_trend_session ? color.new(color.blue, 90) : na
+
+bgcolor(bgColor, title="交易时段/过滤状态")
