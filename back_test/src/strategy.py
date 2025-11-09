@@ -13,6 +13,7 @@ def ema_atr_atrFilter(is_batch_test, data, symbol, interval, backtest_params=Non
     single_atr_threshold_pct = strategy_params.get('atr_threshold_pct', 0)
     single_rr = strategy_params.get('rr', 2)
     single_time_filter_hours = strategy_params.get('time_filter_hours', [])  # 修改：默认空列表，表示无禁止时段；格式 [[start1, end1], [start2, end2]]
+    single_volume_multiplier = strategy_params.get('volume_multiplier', 1.0)  # 新增：成交量倍数，默认1.0（即当前成交量需大于前一根）
 
     # 定义策略类
     class EmaAtrStrategy(Strategy):
@@ -24,6 +25,7 @@ def ema_atr_atrFilter(is_batch_test, data, symbol, interval, backtest_params=Non
         atr_threshold_pct = single_atr_threshold_pct
         rr = single_rr
         time_filter_hours = single_time_filter_hours  # 新增：禁止交易时段
+        volume_multiplier = single_volume_multiplier  # 新增：成交量倍数
 
         def init(self):
             price = self.data.Close
@@ -42,9 +44,9 @@ def ema_atr_atrFilter(is_batch_test, data, symbol, interval, backtest_params=Non
             if current_color != prev_color:
                 return  # 颜色不一致，不交易
             
-            # 检查当前成交量大于前一根K线的成交量
-            if self.data.Volume[-1] <= self.data.Volume[-2]:
-                return  # 成交量不大于前一根，不交易
+            # 检查当前成交量大于前一根K线的成交量的倍数
+            if self.data.Volume[-1] <= self.data.Volume[-2] * self.volume_multiplier:
+                return  # 成交量不大于前一根的倍数，不交易
 
             # 获取当前时间并检查时段过滤器
             current_time = self.data.index[-1]
@@ -83,6 +85,7 @@ def ema_atr_atrFilter(is_batch_test, data, symbol, interval, backtest_params=Non
         sl_multiplier_range = optimize_params.get('sl_multiplier_range', [1])
         atr_threshold_pct_range = optimize_params.get('atr_threshold_pct_range', list(np.arange(0.00001, 0.00101)))
         rr_range = optimize_params.get('rr_range', [1])
+        volume_multiplier_range = optimize_params.get('volume_multiplier_range', [1.0])  # 新增：成交量倍数范围，默认[1.0]
         max_tries = optimize_params.get('max_tries', 6)
         method = optimize_params.get('method', 'sambo')
         return_heatmap = optimize_params.get('return_heatmap', True)
@@ -97,6 +100,7 @@ def ema_atr_atrFilter(is_batch_test, data, symbol, interval, backtest_params=Non
             sl_multiplier=sl_multiplier_range,
             atr_threshold_pct=atr_threshold_pct_range,
             rr=rr_range,
+            volume_multiplier=volume_multiplier_range,  # 新增：成交量倍数优化
             max_tries=max_tries,
             method=method,
             return_heatmap=return_heatmap,

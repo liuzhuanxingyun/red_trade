@@ -83,7 +83,7 @@ def process_single_backtest(stats, symbol, interval, bt, results_dir='back_test/
     plot_filename = f'{single_folder}/ema_atr_win{win_rate}_trades{num_trades}.html'
     
     stats._trades.to_csv(trades_filename, index=True)
-    bt.plot(filename=plot_filename, plot_trades=True, open_browser=True)
+    bt.plot(filename=plot_filename, plot_trades=True, open_browser=False)
 
     # 新增：计算不同小时的胜率
     rr = strategy_params.get('rr', 2) if strategy_params else 2
