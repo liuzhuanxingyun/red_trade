@@ -95,7 +95,6 @@ def main():
                     test_strategy(exchange, symbol, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, SL_ATR_MULTIPLIER, RR, RISK_USDT, leverage, TP_MODE, contract_size, FORBIDDEN_HOURS)
                 else:
                     live_strategy(exchange, symbol, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, SL_ATR_MULTIPLIER, RR, RISK_USDT, leverage, TP_MODE, contract_size, FORBIDDEN_HOURS)
-                logging.info("-" * 50)
             # 测试用
             # time.sleep(5)
             wait_time()

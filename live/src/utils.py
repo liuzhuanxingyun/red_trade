@@ -175,6 +175,7 @@ def wait_time(interval='15m'):
         raise ValueError("Invalid interval format. Use 'Xm', 'Xs', or 'Xh' where X is a number.")
     
     logging.info(f"等待 {wait_seconds} 秒到下一个 {interval} 整点")
+    logging.info("-" * 50)
     time.sleep(wait_seconds)
 
 # 检查当前时段是否允许交易

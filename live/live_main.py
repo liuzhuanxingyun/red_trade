@@ -14,7 +14,7 @@ setup_logging()
 load_dotenv()
 
 # 添加模拟交易参数
-IS_SIMULATION = True  #  False（实盘），如需模拟改为 True
+IS_SIMULATION = False  #  False（实盘），如需模拟改为 True
 
 EMAIL_TO = os.getenv('EMAIL_TO')
 EMAIL_FROM = os.getenv('EMAIL_FROM')
@@ -99,7 +99,6 @@ def main():
                     test_strategy(exchange, symbol, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, SL_ATR_MULTIPLIER, RR, RISK_USDT, leverage, TP_MODE, contract_size, FORBIDDEN_HOURS)
                 else:
                     live_strategy(exchange, symbol, EMA_PERIOD, ATR_PERIOD, MULTIPLIER, ATR_THRESHOLD_PCT, SL_ATR_MULTIPLIER, RR, RISK_USDT, leverage, TP_MODE, contract_size, FORBIDDEN_HOURS)
-                logging.info("-" * 50)
             # 测试用
             # time.sleep(5)
             wait_time()

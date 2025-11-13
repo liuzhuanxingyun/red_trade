@@ -35,6 +35,10 @@ def ema_atr_filter(exchange, symbol, ema_period, atr_period, multiplier, atr_thr
         # 获取K线数据
         df = get_ohlcv_data(exchange, symbol, timeframe='15m')
         
+        # 添加调试日志：检查数据是否更新（一一对应输出上上根和上一根K线的时间和成交量）
+        for i, (ts, vol) in enumerate(zip(df.index[-3:-1], df['volume'].iloc[-3:-1]), 1):
+            logging.info(f"K线{i}: 时间 {ts}, 成交量 {vol}")
+        
         # 计算技术指标
         df['ema'] = talib.EMA(df['close'], timeperiod=ema_period)
         df['atr'] = talib.ATR(df['high'], df['low'], df['close'], timeperiod=atr_period)
