@@ -1,10 +1,11 @@
 import talib
 import logging
 from datetime import datetime, timezone
-
+import pandas as pd
+import time
 from .utils import get_ohlcv_data, is_trading_allowed  # 添加导入
 
-def ema_atr_filter(exchange, symbol, ema_period, atr_period, multiplier, atr_threshold_pct, forbidden_hours=None):
+def ema_atr_filter(exchange, symbol, ema_period, atr_period, multiplier, atr_threshold_pct, forbidden_hours=None, timeframe='15m'):
     """
     生成EMA-ATR过滤信号。
     
@@ -18,6 +19,7 @@ def ema_atr_filter(exchange, symbol, ema_period, atr_period, multiplier, atr_thr
     multiplier: 通道倍数
     atr_threshold_pct: ATR阈值百分比
     forbidden_hours: 禁止交易时段列表，如 [[23,2], [12,17]]，默认None（允许所有时段）
+    timeframe: K线时间框架，如 '15m', '30m', '1h'，默认 '15m'
     
     返回:
     tuple: (信号类型, ATR值) 或 (None, ATR值)
@@ -31,10 +33,27 @@ def ema_atr_filter(exchange, symbol, ema_period, atr_period, multiplier, atr_thr
         if not is_trading_allowed(current_hour, forbidden_hours):
             logging.info("当前时段禁止交易。")
             return None, None
-        
-        # 获取K线数据
-        df = get_ohlcv_data(exchange, symbol, timeframe='15m')
-        
+
+        max_retries = 100
+        for attempt in range(max_retries):
+            df = get_ohlcv_data(exchange, symbol, timeframe=timeframe)
+            duration_seconds = exchange.parse_timeframe(timeframe)
+            now_ts = time.time()
+            expected_last_ts = (int(now_ts // duration_seconds) - 1) * duration_seconds
+            expected_prev_ts = (int(now_ts // duration_seconds) - 2) * duration_seconds
+            last_ts = int(df.index[-2].timestamp())
+            prev_ts = int(df.index[-3].timestamp())
+            if last_ts == expected_last_ts and prev_ts == expected_prev_ts:
+                break
+            else:
+                logging.warning(
+                    f"K线数据时间不匹配，需重新获取。期望: {pd.to_datetime(expected_prev_ts, unit='s')} 和 {pd.to_datetime(expected_last_ts, unit='s')}，实际: {df.index[-3]} 和 {df.index[-2]}"
+                )
+                time.sleep(2)
+        else:
+            logging.error("重试次数过多，仍未获取到匹配时间的数据。")
+            return None, None
+
         # 添加调试日志：检查数据是否更新（一一对应输出上上根和上一根K线的时间和成交量）
         for i, (ts, vol) in enumerate(zip(df.index[-3:-1], df['volume'].iloc[-3:-1]), 1):
             logging.info(f"K线{i}: 时间 {ts}, 成交量 {vol}")

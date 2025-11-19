@@ -27,7 +27,7 @@ SYMBOLS = ['BTC/USDT:USDT']  # 添加更多品种
 # --- 参数配置 ---
 TIMEFRAME = '15m'
 CONTRACT_SIZES = [100]  # 与SYMBOLS一一对应
-LEVERAGES = [10]  # 与SYMBOLS一一对应，每个品种的杠杆
+LEVERAGES = [15]  # 与SYMBOLS一一对应，每个品种的杠杆
 
 # 在全局变量部分添加止盈模式配置
 TP_MODE = 'limit'  # 可选值: 'limit' (限价止盈) 或 'trailing' (移动止盈止损)
