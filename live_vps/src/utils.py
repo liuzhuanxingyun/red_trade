@@ -176,7 +176,7 @@ def wait_time(interval='15m'):
     
     logging.info(f"等待 {wait_seconds} 秒到下一个 {interval} 整点")
     logging.info("-" * 50)
-    time.sleep(wait_seconds + 1)  # 添加一秒延迟
+    time.sleep(wait_seconds + 2)  # 添加一秒延迟
 
 # 检查当前时段是否允许交易
 def is_trading_allowed(current_hour, forbidden_hours):
